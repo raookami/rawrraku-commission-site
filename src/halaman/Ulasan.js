@@ -1,6 +1,6 @@
 import ReviewForm from '../komponen/ReviewForm';
 
-export default function Ulasan({ isDark, theme }) {
+export default function Ulasan({ isDark, theme, visitorName }) {
   return (
     <div
       className="page-enter"
@@ -16,7 +16,7 @@ export default function Ulasan({ isDark, theme }) {
       >
         Pernah order? Ceritain pengalaman kamu! 💙
       </p>
-      <ReviewForm theme={theme} isDark={isDark} />
+      <ReviewForm theme={theme} isDark={isDark} visitorName={visitorName} />
     </div>
   );
 }

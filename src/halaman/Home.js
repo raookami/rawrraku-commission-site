@@ -4,7 +4,7 @@ import { getStatusStyle } from '../themes';
 import ReviewMarquee from '../komponen/ReviewMarquee';
 import { supabase } from '../supabase';
 
-export default function Home({ isDark, theme }) {
+export default function Home({ isDark, theme, isAdmin }) {
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(true);
 
@@ -82,24 +82,28 @@ export default function Home({ isDark, theme }) {
           />
           <strong>{isOpen ? 'COMMISSION OPEN' : 'COMMISSION CLOSED'}</strong>
           <button
-            onClick={() => {
-              const pw = prompt('Password:');
-              if (pw === '09000') {
-                setIsOpen(!isOpen);
-              } else {
-                alert('Password salah!');
-              }
+            onClick={async () => {
+              if (!isAdmin) return;
+              const newStatus = !isOpen;
+              setIsOpen(newStatus);
+              await supabase
+                .from('settings')
+                .update({ value: String(newStatus) })
+                .eq('key', 'commission_open');
             }}
             style={{
               marginLeft: 'auto',
               padding: '4px 14px',
               borderRadius: 999,
               border: 'none',
-              background: 'transparent',
-              cursor: 'default',
+              background: isAdmin ? (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)') : 'transparent',
+              cursor: isAdmin ? 'pointer' : 'default',
               fontSize: 12,
+              color: isAdmin ? (isDark ? '#ccc' : '#555') : 'transparent',
             }}
-          />
+          >
+            {isAdmin ? (isOpen ? 'Tutup' : 'Buka') : ''}
+          </button>
         </div>
 
         {/* Info singkat */}

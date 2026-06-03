@@ -38,12 +38,12 @@ const commissions = [
   },
 ];
 
-export default function Order({ isDark, theme }) {
+export default function Order({ isDark, theme, visitorName }) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
   const [formData, setFormData] = useState({
-    name: '',
+    name: visitorName || '',
     contact: '',
     email: '',
     type: searchParams.get('type') || '',

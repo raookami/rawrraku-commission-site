@@ -1,17 +1,19 @@
 import { Link, useLocation } from 'react-router-dom';
 
-const tabs = [
+const publicTabs = [
   { path: '/', label: 'Home', icon: '🏠' },
   { path: '/portfolio', label: 'Portfolio', icon: '🖼️' },
   { path: '/commission', label: 'Commission', icon: '🎨' },
   { path: '/order', label: 'Order', icon: '📝' },
   { path: '/ulasan', label: 'Ulasan', icon: '✍️' },
   { path: '/reviews', label: 'Reviews', icon: '⭐' },
-  { path: '/admin', label: '🔐', icon: '🔐' },
 ];
 
-export default function Navbar({ isDark, toggleTheme, theme }) {
+const adminTab = { path: '/admin', label: '🔐 Admin', icon: '🔐' };
+
+export default function Navbar({ isDark, toggleTheme, theme, isAdmin, visitorName }) {
   const location = useLocation();
+  const tabs = isAdmin ? [...publicTabs, adminTab] : publicTabs;
 
   return (
     <>
@@ -46,6 +48,14 @@ export default function Navbar({ isDark, toggleTheme, theme }) {
                 {label}
               </Link>
             ))}
+
+            {/* Sapa visitor */}
+            {visitorName && (
+              <span style={{ fontSize: 13, color: isDark ? '#aaa' : '#888', padding: '0 4px' }}>
+                Hii, {visitorName}!
+              </span>
+            )}
+
             <button
               onClick={toggleTheme}
               style={theme.themeToggle}

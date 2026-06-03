@@ -30,8 +30,8 @@ function StarPicker({ value, onChange }) {
   );
 }
 
-export default function ReviewForm({ theme, isDark }) {
-  const [form, setForm] = useState({ name: '', rating: 0, comment: '' });
+export default function ReviewForm({ theme, isDark, visitorName }) {
+  const [form, setForm] = useState({ name: visitorName || '', rating: 0, comment: '' });
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState('');

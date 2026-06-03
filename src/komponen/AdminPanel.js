@@ -1,10 +1,8 @@
 // src/components/AdminPanel.jsx
-// Panel admin untuk approve/hapus ulasan — login pakai password
+// Panel admin untuk approve/hapus ulasan
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
-
-const ADMIN_PASSWORD = '09000'; // Sama kayak password commission status kamu
 
 function StarDisplay({ rating }) {
   return (
@@ -16,23 +14,13 @@ function StarDisplay({ rating }) {
 }
 
 export default function AdminPanel({ theme, isDark }) {
-  const [loggedIn, setLoggedIn] = useState(false);
-  const [pw, setPw] = useState('');
-  const [pwError, setPwError] = useState('');
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [filter, setFilter] = useState('pending'); // 'pending' | 'approved'
+  const [filter, setFilter] = useState('pending');
 
-  function handleLogin(e) {
-    e.preventDefault();
-    if (pw === ADMIN_PASSWORD) {
-      setLoggedIn(true);
-      setPwError('');
-      fetchReviews('pending');
-    } else {
-      setPwError('Password salah!');
-    }
-  }
+  useEffect(() => {
+    fetchReviews('pending');
+  }, []);
 
   async function fetchReviews(status) {
     setLoading(true);
@@ -50,21 +38,13 @@ export default function AdminPanel({ theme, isDark }) {
       .from('reviews')
       .update({ status: 'approved' })
       .eq('id', id);
-
-    if (error) {
-      alert('Gagal approve: ' + error.message);
-      return;
-    }
+    if (error) { alert('Gagal approve: ' + error.message); return; }
     setReviews((prev) => prev.filter((r) => r.id !== id));
   }
 
   async function reject(id) {
     const { error } = await supabase.from('reviews').delete().eq('id', id);
-
-    if (error) {
-      alert('Gagal hapus: ' + error.message);
-      return;
-    }
+    if (error) { alert('Gagal hapus: ' + error.message); return; }
     setReviews((prev) => prev.filter((r) => r.id !== id));
   }
 
@@ -73,64 +53,12 @@ export default function AdminPanel({ theme, isDark }) {
     fetchReviews(f);
   }
 
-  // ===== HALAMAN LOGIN =====
-  if (!loggedIn) {
-    return (
-      <div
-        style={{
-          maxWidth: 360,
-          margin: '40px auto',
-          padding: 32,
-          background: isDark
-            ? 'rgba(255,255,255,0.04)'
-            : 'rgba(255,255,255,0.95)',
-          borderRadius: 20,
-          border: isDark ? '1px solid #333' : '1px solid #e8e0f0',
-          boxShadow: '0 4px 24px rgba(0,0,0,0.1)',
-          textAlign: 'center',
-        }}
-      >
-        <div style={{ fontSize: 48, marginBottom: 8 }}>🔐</div>
-        <h2 style={{ ...theme.sectionTitle, marginBottom: 4 }}>Admin Panel</h2>
-        <p
-          style={{
-            fontSize: 13,
-            color: isDark ? '#aaa' : '#888',
-            marginBottom: 24,
-          }}
-        >
-          Masukkan password untuk manage ulasan
-        </p>
-
-        <form
-          onSubmit={handleLogin}
-          style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
-        >
-          <input
-            style={{
-              ...theme.input,
-              textAlign: 'center',
-              letterSpacing: 4,
-              fontSize: 18,
-            }}
-            type="password"
-            placeholder="••••••"
-            value={pw}
-            onChange={(e) => setPw(e.target.value)}
-            autoFocus
-          />
-          {pwError && (
-            <div style={{ color: '#e05', fontSize: 13 }}>{pwError}</div>
-          )}
-          <button type="submit" style={theme.btnPrimary}>
-            Masuk 🚀
-          </button>
-        </form>
-      </div>
-    );
+  function handleLogout() {
+    localStorage.removeItem('visitor_name');
+    localStorage.removeItem('is_admin');
+    window.location.href = '/';
   }
 
-  // ===== PANEL ADMIN =====
   return (
     <div style={{ maxWidth: 640, margin: '0 auto' }}>
       <div
@@ -143,7 +71,7 @@ export default function AdminPanel({ theme, isDark }) {
       >
         <h2 style={{ ...theme.sectionTitle, margin: 0 }}>🛡️ Manage Ulasan</h2>
         <button
-          onClick={() => setLoggedIn(false)}
+          onClick={handleLogout}
           style={{
             background: 'transparent',
             border: '1px solid #e05',
@@ -185,24 +113,18 @@ export default function AdminPanel({ theme, isDark }) {
 
       {/* List ulasan */}
       {loading ? (
-        <div style={{ textAlign: 'center', padding: 40, color: '#aaa' }}>
-          Loading...
-        </div>
+        <div style={{ textAlign: 'center', padding: 40, color: '#aaa' }}>Loading...</div>
       ) : reviews.length === 0 ? (
         <div
           style={{
             textAlign: 'center',
             padding: 40,
-            background: isDark
-              ? 'rgba(255,255,255,0.04)'
-              : 'rgba(255,255,255,0.8)',
+            background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.8)',
             borderRadius: 16,
             color: isDark ? '#aaa' : '#999',
           }}
         >
-          {filter === 'pending'
-            ? '🎉 Tidak ada ulasan pending!'
-            : '📭 Belum ada ulasan approved.'}
+          {filter === 'pending' ? '🎉 Tidak ada ulasan pending!' : '📭 Belum ada ulasan approved.'}
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -210,9 +132,7 @@ export default function AdminPanel({ theme, isDark }) {
             <div
               key={review.id}
               style={{
-                background: isDark
-                  ? 'rgba(255,255,255,0.05)'
-                  : 'rgba(255,255,255,0.95)',
+                background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.95)',
                 border: isDark ? '1px solid #333' : '1px solid #e8e0f0',
                 borderRadius: 14,
                 padding: '16px 20px',
@@ -221,40 +141,20 @@ export default function AdminPanel({ theme, isDark }) {
                 gap: 8,
               }}
             >
-              {/* Header */}
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                }}
-              >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  {/* Avatar */}
                   <div
                     style={{
-                      width: 36,
-                      height: 36,
-                      borderRadius: '50%',
-                      background: '#5e81d1',
-                      color: 'white',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontWeight: 700,
-                      fontSize: 15,
+                      width: 36, height: 36, borderRadius: '50%',
+                      background: '#5e81d1', color: 'white',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontWeight: 700, fontSize: 15,
                     }}
                   >
                     {review.name.charAt(0).toUpperCase()}
                   </div>
                   <div>
-                    <div
-                      style={{
-                        fontWeight: 700,
-                        fontSize: 14,
-                        color: isDark ? '#eee' : '#333',
-                      }}
-                    >
+                    <div style={{ fontWeight: 700, fontSize: 14, color: isDark ? '#eee' : '#333' }}>
                       {review.name}
                     </div>
                     <StarDisplay rating={review.rating} />
@@ -262,40 +162,23 @@ export default function AdminPanel({ theme, isDark }) {
                 </div>
                 <div style={{ fontSize: 11, color: '#aaa' }}>
                   {new Date(review.created_at).toLocaleDateString('id-ID', {
-                    day: 'numeric',
-                    month: 'short',
-                    year: 'numeric',
+                    day: 'numeric', month: 'short', year: 'numeric',
                   })}
                 </div>
               </div>
 
-              {/* Komentar */}
-              <p
-                style={{
-                  fontSize: 14,
-                  color: isDark ? '#ccc' : '#555',
-                  margin: 0,
-                  lineHeight: 1.5,
-                }}
-              >
+              <p style={{ fontSize: 14, color: isDark ? '#ccc' : '#555', margin: 0, lineHeight: 1.5 }}>
                 "{review.comment}"
               </p>
 
-              {/* Tombol aksi */}
               {filter === 'pending' && (
                 <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
                   <button
                     onClick={() => approve(review.id)}
                     style={{
-                      flex: 1,
-                      padding: '8px',
-                      borderRadius: 8,
-                      border: 'none',
-                      background: '#5ed182',
-                      color: 'white',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      fontSize: 13,
+                      flex: 1, padding: '8px', borderRadius: 8, border: 'none',
+                      background: '#5ed182', color: 'white', fontWeight: 700,
+                      cursor: 'pointer', fontSize: 13,
                     }}
                   >
                     ✅ Approve
@@ -303,15 +186,9 @@ export default function AdminPanel({ theme, isDark }) {
                   <button
                     onClick={() => reject(review.id)}
                     style={{
-                      flex: 1,
-                      padding: '8px',
-                      borderRadius: 8,
-                      border: 'none',
-                      background: '#e05555',
-                      color: 'white',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      fontSize: 13,
+                      flex: 1, padding: '8px', borderRadius: 8, border: 'none',
+                      background: '#e05555', color: 'white', fontWeight: 700,
+                      cursor: 'pointer', fontSize: 13,
                     }}
                   >
                     🗑️ Hapus
@@ -323,15 +200,9 @@ export default function AdminPanel({ theme, isDark }) {
                 <button
                   onClick={() => reject(review.id)}
                   style={{
-                    padding: '8px',
-                    borderRadius: 8,
-                    border: 'none',
-                    background: '#e05555',
-                    color: 'white',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    fontSize: 13,
-                    marginTop: 4,
+                    padding: '8px', borderRadius: 8, border: 'none',
+                    background: '#e05555', color: 'white', fontWeight: 700,
+                    cursor: 'pointer', fontSize: 13, marginTop: 4,
                   }}
                 >
                   🗑️ Hapus Ulasan Ini
