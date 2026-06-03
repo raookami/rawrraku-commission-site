@@ -80,8 +80,6 @@ export default function ReviewMarquee({ isDark, onClickReviews }) {
 
   if (reviews.length === 0) return null;
 
-  const duration = reviews.length * 8;
-
   return (
     <div
       onClick={onClickReviews}

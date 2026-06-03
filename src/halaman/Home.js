@@ -32,6 +32,7 @@ export default function Home({ isDark, theme }) {
         <div style={theme.hero}>
           <img
             src="/lv_0_20250116221257.gif"
+            alt="Raooraku"
             style={{
               width: 100,
               height: 100,

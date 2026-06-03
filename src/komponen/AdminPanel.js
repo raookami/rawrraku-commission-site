@@ -1,7 +1,7 @@
 // src/components/AdminPanel.jsx
 // Panel admin untuk approve/hapus ulasan — login pakai password
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { supabase } from '../supabase';
 
 const ADMIN_PASSWORD = '09000'; // Sama kayak password commission status kamu

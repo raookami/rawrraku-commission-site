@@ -223,6 +223,7 @@ export default function Portfolio({ isDark, theme }) {
 
           <img
             src={imgUrl(lightbox.imgs[lightbox.index], 1200)}
+            alt=""
             style={{
               maxWidth: '90vw',
               maxHeight: '90vh',
