@@ -17,23 +17,18 @@ export default function Navbar({ isDark, toggleTheme, theme, isAdmin, visitorNam
 
   return (
     <>
-      {/* ===== NAVBAR ATAS (DESKTOP) ===== */}
+      {/* ===== NAVBAR ATAS (DESKTOP + MOBILE TOP) ===== */}
       <header style={theme.header}>
         <div style={theme.headerInner}>
+          {/* Kiri: Logo */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <div>
               <h1 style={theme.logo}>🐺 RAOORAKU</h1>
               <p style={theme.tagline}>Illustrator · Commission Open</p>
             </div>
-            <button
-              onClick={toggleTheme}
-              className="mobile-theme-toggle"
-              style={{ ...theme.themeToggle, display: 'none' }}
-            >
-              {isDark ? '☀️' : '🌙'}
-            </button>
           </div>
 
+          {/* Kanan desktop: nav links + sapaan + toggle */}
           <nav style={theme.nav}>
             {tabs.map(({ path, label }) => (
               <Link
@@ -49,7 +44,6 @@ export default function Navbar({ isDark, toggleTheme, theme, isAdmin, visitorNam
               </Link>
             ))}
 
-            {/* Sapa visitor */}
             {visitorName && (
               <span style={{ fontSize: 13, color: isDark ? '#aaa' : '#888', padding: '0 4px' }}>
                 Hii, {visitorName}!
@@ -64,6 +58,28 @@ export default function Navbar({ isDark, toggleTheme, theme, isAdmin, visitorNam
               {isDark ? '☀️' : '🌙'}
             </button>
           </nav>
+
+          {/* Kanan mobile: sapaan + toggle — hanya tampil di mobile */}
+          <div
+            className="mobile-right"
+            style={{ display: 'none', alignItems: 'center', gap: 8 }}
+          >
+            {visitorName && (
+              <span style={{
+                fontSize: 12,
+                fontWeight: 600,
+                color: isDark ? '#ccc' : '#555',
+                background: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)',
+                borderRadius: 999,
+                padding: '4px 10px',
+              }}>
+                Hii, {visitorName}! 👋
+              </span>
+            )}
+            <button onClick={toggleTheme} style={theme.themeToggle}>
+              {isDark ? '☀️' : '🌙'}
+            </button>
+          </div>
         </div>
       </header>
 
@@ -104,12 +120,7 @@ export default function Navbar({ isDark, toggleTheme, theme, isAdmin, visitorNam
             }}
           >
             <span style={{ fontSize: 20 }}>{icon}</span>
-            <span
-              style={{
-                fontSize: 10,
-                fontWeight: location.pathname === path ? 700 : 400,
-              }}
-            >
+            <span style={{ fontSize: 10, fontWeight: location.pathname === path ? 700 : 400 }}>
               {label}
             </span>
           </Link>

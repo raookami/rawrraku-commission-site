@@ -21,6 +21,11 @@
   header nav {
     display: none !important;
   }
+
+  /* Tampilkan sapaan + toggle di kanan atas mobile */
+  .mobile-right {
+    display: flex !important;
+  }
 }
 html,
 body,
