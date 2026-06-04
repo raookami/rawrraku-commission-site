@@ -106,7 +106,7 @@ export default function Order({ isDark, theme, visitorName }) {
 `;
 
     try {
-      await fetch(webhookUrl, {
+      await fetch('/api/order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: pesan }),
