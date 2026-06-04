@@ -94,10 +94,6 @@ export default function Order({ isDark, theme, visitorName }) {
 
     const webhookUrl = process.env.REACT_APP_DISCORD_WEBHOOK_URL;
 
-    if (!webhookUrl) {
-      alert('Webhook tidak dikonfigurasi!');
-      return;
-    }
     const pesan = `
 🎨 **ORDER BARU!**
 👤 **Nama:** ${formData.name}
