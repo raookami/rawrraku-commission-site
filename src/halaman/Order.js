@@ -92,9 +92,12 @@ export default function Order({ isDark, theme, visitorName }) {
   async function handleSubmit(e) {
     e.preventDefault();
 
-    const webhookUrl =
-      'https://discord.com/api/webhooks/1508346926934917262/hGuyRQRUUYE00d7je0g4WTmO3AYOJ9GeKicy6bVxBGikoN8i6RUTeafSbUDH-qxImWpV';
+    const webhookUrl = import.meta.env.VITE_DISCORD_WEBHOOK_URL;
 
+    if (!webhookUrl) {
+      alert('Webhook tidak dikonfigurasi!');
+      return;
+    }
     const pesan = `
 🎨 **ORDER BARU!**
 👤 **Nama:** ${formData.name}
