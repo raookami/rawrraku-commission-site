@@ -92,7 +92,7 @@ export default function Order({ isDark, theme, visitorName }) {
   async function handleSubmit(e) {
     e.preventDefault();
 
-    const webhookUrl = import.meta.env.VITE_DISCORD_WEBHOOK_URL;
+    const webhookUrl = process.env.REACT_APP_DISCORD_WEBHOOK_URL;
 
     if (!webhookUrl) {
       alert('Webhook tidak dikonfigurasi!');
