@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { useTheme } from './useTheme';
 import { getTheme } from './themes';
+import { supabase } from './supabase';
 
 import Navbar from './komponen/Navbar';
 import Footer from './komponen/Footer';
@@ -15,34 +16,59 @@ import Ulasan from './halaman/Ulasan';
 import Reviews from './halaman/Reviews';
 import Admin from './halaman/Admin';
 
-export default function App() {
-  const { isDark, toggleTheme } = useTheme();
-  const theme = getTheme(isDark);
-
+function AppInner({ isDark, toggleTheme, theme }) {
   const [visitorName, setVisitorName] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
 
   useEffect(() => {
-    const savedName = localStorage.getItem('visitor_name');
-    const savedAdmin = localStorage.getItem('is_admin') === 'true';
-    if (savedName) {
-      setVisitorName(savedName);
-      setIsAdmin(savedAdmin);
-    } else {
-      setShowModal(true);
+    // Cek apakah ada Supabase session aktif (untuk admin yang sudah login)
+    async function checkSession() {
+      const { data: { session } } = await supabase.auth.getSession();
+      const savedName = localStorage.getItem('visitor_name');
+
+      if (session && savedName) {
+        // Ada session Supabase yang valid → ini admin
+        setVisitorName(savedName);
+        setIsAdmin(true);
+      } else if (savedName && !session) {
+        // Ada nama tapi tidak ada session → visitor biasa
+        setVisitorName(savedName);
+        setIsAdmin(false);
+      } else {
+        // Belum pernah masuk → tampilkan modal
+        setShowModal(true);
+      }
+      setAuthChecked(true);
     }
+
+    checkSession();
+
+    // Listen perubahan auth (kalau session expired dll)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        if (!session) {
+          // Session habis / logout → reset admin status
+          setIsAdmin(false);
+        }
+      }
+    );
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  function handleEnter(name, adminStatus) {
+  function handleEnter(name, adminStatus, _session) {
     setVisitorName(name);
     setIsAdmin(adminStatus);
     setShowModal(false);
   }
 
+  // Tunggu pengecekan auth selesai dulu
+  if (!authChecked) return null;
+
   return (
-    <BrowserRouter>
-      <div style={theme.app}>
+    <div style={theme.app}>
         {showModal && (
           <WelcomeModal
             theme={theme}
@@ -73,6 +99,15 @@ export default function App() {
 
         <Footer theme={theme} />
       </div>
+  );
+}
+
+export default function App() {
+  const { isDark, toggleTheme } = useTheme();
+  const theme = getTheme(isDark);
+  return (
+    <BrowserRouter>
+      <AppInner isDark={isDark} toggleTheme={toggleTheme} theme={theme} />
     </BrowserRouter>
   );
 }

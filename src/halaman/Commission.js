@@ -1,66 +1,45 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-
-const commissions = [
-  {
-    id: 1,
-    type: 'Bust Up',
-    emoji: '🎨',
-    variant: [
-      {
-        label: 'Simple BG',
-        price: 100000,
-        desc: 'Gambar karakter dengan background sederhana.',
-      },
-      {
-        label: 'Normal BG',
-        price: 130000,
-        desc: 'Gambar karakter dengan normal background.',
-      },
-    ],
-    slots: 5,
-  },
-  {
-    id: 2,
-    type: 'Half Body',
-    emoji: '🐻‍❄️',
-    variant: [
-      {
-        label: 'Simple BG',
-        price: 200000,
-        desc: 'Gambar karakter dengan background sederhana.',
-      },
-      {
-        label: 'Normal BG',
-        price: 250000,
-        desc: 'Gambar karakter dengan normal background.',
-      },
-    ],
-    slots: 3,
-  },
-  {
-    id: 3,
-    type: 'Full Body',
-    emoji: '✨',
-    variant: [
-      {
-        label: 'Simple BG',
-        price: 300000,
-        desc: 'Gambar karakter dengan background sederhana.',
-      },
-      {
-        label: 'Normal BG',
-        price: 380000,
-        desc: 'Gambar karakter dengan normal background.',
-      },
-    ],
-    slots: 2,
-  },
-];
+import { supabase } from '../supabase';
 
 export default function Commission({ isDark, theme }) {
   const navigate = useNavigate();
+  const [commissions, setCommissions] = useState([]);
+  const [addons, setAddons] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [selectedComm, setSelectedComm] = useState(null);
+
+  useEffect(() => {
+    async function fetchData() {
+      const [{ data: commData }, { data: addonData }] = await Promise.all([
+        supabase
+          .from('commission_types')
+          .select('*, commission_variants(*)')
+          .order('sort_order'),
+        supabase.from('addons').select('*').order('sort_order'),
+      ]);
+      setCommissions(commData || []);
+      setAddons(addonData || []);
+      setLoading(false);
+    }
+    fetchData();
+  }, []);
+
+  function formatAddonLabel(addon) {
+    if (addon.type === 'percent') return `+${addon.value_num}% per karakter`;
+    if (addon.type === 'range') return `+Rp ${Number(addon.value_min).toLocaleString('id-ID')} – ${Number(addon.value_max).toLocaleString('id-ID')}`;
+    if (addon.type === 'multiplier') return `×${addon.value_num} total harga`;
+    if (addon.type === 'fixed') return `+Rp ${Number(addon.value_num).toLocaleString('id-ID')}`;
+    return '';
+  }
+
+  if (loading) {
+    return (
+      <div className="page-enter" style={{ ...theme.page, textAlign: 'center', paddingTop: 60 }}>
+        <div style={{ color: '#aaa' }}>Memuat...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="page-enter" style={theme.page}>
@@ -86,42 +65,25 @@ export default function Commission({ isDark, theme }) {
             </div>
 
             {selectedComm === c.id ? (
-              <div
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 8,
-                  marginTop: 8,
-                }}
-              >
-                {c.variant.map((v) => (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
+                {(c.commission_variants || []).map((v) => (
                   <button
-                    key={v.label}
+                    key={v.id}
                     style={theme.btnVariant}
                     onClick={() => {
-                      // Kirim data ke Order via URL query
-                      navigate(
-                        `/order?type=${encodeURIComponent(`${c.type} — ${v.label}`)}`,
-                      );
+                      navigate(`/order?type=${encodeURIComponent(`${c.type} — ${v.label}`)}`);
                       setSelectedComm(null);
                     }}
                   >
                     <strong>{v.label}</strong>
                     <span style={{ fontSize: 12, color: '#a06080' }}>
-                      {' '}
-                      · Rp {v.price.toLocaleString('id-ID')}
+                      {' '}· Rp {Number(v.price).toLocaleString('id-ID')}
                     </span>
-                    <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>
-                      {v.desc}
-                    </div>
+                    <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>{v.description}</div>
                   </button>
                 ))}
                 <button
-                  style={{
-                    ...theme.btnSecondary,
-                    fontSize: 13,
-                    padding: '6px 12px',
-                  }}
+                  style={{ ...theme.btnSecondary, fontSize: 13, padding: '6px 12px' }}
                   onClick={() => setSelectedComm(null)}
                 >
                   Batal
@@ -140,42 +102,30 @@ export default function Commission({ isDark, theme }) {
         ))}
       </div>
 
-      {/* ADD-ONS */}
-      <div style={theme.tos}>
-        <h3 style={theme.tosTitle}>✨ Add-ons</h3>
-        <ul style={theme.tosList}>
-          <li>
-            <strong>Extra character</strong> — +50% per karakter
-          </li>
-          <li>
-            <strong>Detailed BG</strong> — +Rp 50.000 – 100.000
-          </li>
-          <li>
-            <strong>Commercial use</strong> — 2× total harga
-          </li>
-          <li>
-            <strong>Character Design</strong> — Rp 500.000 – 1.000.000
-            <ul style={{ marginTop: 4 }}>
-              <li>
-                <em>Basic</em> — 1 fullbody pose, final colour
+      {/* ADD-ONS dari Supabase */}
+      {addons.length > 0 && (
+        <div style={theme.tos}>
+          <h3 style={theme.tosTitle}>✨ Add-ons</h3>
+          <ul style={theme.tosList}>
+            {addons.map((addon) => (
+              <li key={addon.id}>
+                <strong>{addon.label}</strong>
+                <span style={{ color: '#888', marginLeft: 6 }}>
+                  — {formatAddonLabel(addon)}
+                </span>
               </li>
-              <li>
-                <em>Full</em> — 1 fullbody pose, outfit details, color palette
-              </li>
-            </ul>
-          </li>
-        </ul>
-      </div>
+            ))}
+          </ul>
+        </div>
+      )}
 
-      {/* TOS */}
+      {/* TOS — tetap statis */}
       <div style={theme.tos}>
         <h3 style={theme.tosTitle}>📋 Terms of Service</h3>
         <ul style={theme.tosList}>
           <li>Payment after sketch approval.</li>
           <li>No refunds after payment is made.</li>
-          <li>
-            Turnaround time: 7–14 days (depends on queue). DON'T RUSH PLEASE
-          </li>
+          <li>Turnaround time: 7–14 days (depends on queue). DON'T RUSH PLEASE</li>
           <li>2x minor revision (small color / expression).</li>
           <li>I may decline a commission if I'm unable to take it.</li>
           <li>Will not draw: NSFW, 18+, fetish, heavy gore, complex mecha.</li>

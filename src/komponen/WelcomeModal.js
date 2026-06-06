@@ -1,15 +1,17 @@
 import { useState } from 'react';
+import { supabase } from '../supabase';
 
 export default function WelcomeModal({ theme, isDark, onEnter }) {
   const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
+  const [step, setStep] = useState('name'); // 'name' | 'auth'
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const ADMIN_NAME = process.env.REACT_APP_ADMIN_NAME?.toLowerCase();
-  const ADMIN_PASSWORD = process.env.REACT_APP_ADMIN_PASSWORD;
 
-  function handleSubmit(e) {
+  function handleNameSubmit(e) {
     e.preventDefault();
     const trimmedName = name.trim();
     if (!trimmedName) return;
@@ -17,26 +19,47 @@ export default function WelcomeModal({ theme, isDark, onEnter }) {
     const isAdminName = trimmedName.toLowerCase() === ADMIN_NAME;
 
     if (isAdminName) {
-      // Kalau nama admin, wajib input password
-      if (!showPassword) {
-        setShowPassword(true);
-        setError('');
-        return;
-      }
-      if (password !== ADMIN_PASSWORD) {
-        setError('Password salah!');
-        return;
-      }
-      // Login admin berhasil
-      localStorage.setItem('visitor_name', trimmedName);
-      localStorage.setItem('is_admin', 'true');
-      onEnter(trimmedName, true);
+      // Lanjut ke step auth (Supabase)
+      setStep('auth');
+      setError('');
     } else {
-      // Client biasa
+      // Client biasa — langsung masuk, tanpa auth
       localStorage.setItem('visitor_name', trimmedName);
       localStorage.removeItem('is_admin');
-      onEnter(trimmedName, false);
+      onEnter(trimmedName, false, null);
     }
+  }
+
+  async function handleAdminLogin(e) {
+    e.preventDefault();
+    if (!email || !password) return;
+    setLoading(true);
+    setError('');
+
+    const { data, error: authError } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    });
+
+    if (authError) {
+      setError('Email atau password salah!');
+      setLoading(false);
+      return;
+    }
+
+    // Sukses — simpan nama saja, TIDAK simpan is_admin di localStorage
+    const trimmedName = name.trim();
+    localStorage.setItem('visitor_name', trimmedName);
+    localStorage.removeItem('is_admin'); // tidak pakai localStorage untuk admin
+    onEnter(trimmedName, true, data.session);
+    setLoading(false);
+  }
+
+  function handleBackToName() {
+    setStep('name');
+    setError('');
+    setEmail('');
+    setPassword('');
   }
 
   return (
@@ -64,55 +87,95 @@ export default function WelcomeModal({ theme, isDark, onEnter }) {
           boxShadow: '0 8px 40px rgba(0,0,0,0.2)',
         }}
       >
-        <div style={{ fontSize: 56, marginBottom: 8 }}>🐺</div>
-        <h2
-          style={{
-            fontSize: 22,
-            fontWeight: 700,
-            color: isDark ? '#eee' : '#222',
-            marginBottom: 4,
-          }}
-        >
-          Hai! Selamat datang!
-        </h2>
-        <p
-          style={{
-            fontSize: 14,
-            color: isDark ? '#aaa' : '#888',
-            marginBottom: 28,
-          }}
-        >
-          Siapa namamu?
-        </p>
+        {step === 'name' && (
+          <>
+            <div style={{ fontSize: 56, marginBottom: 8 }}>🐺</div>
+            <h2
+              style={{
+                fontSize: 22,
+                fontWeight: 700,
+                color: isDark ? '#eee' : '#222',
+                marginBottom: 4,
+              }}
+            >
+              Hai! Selamat datang!
+            </h2>
+            <p
+              style={{
+                fontSize: 14,
+                color: isDark ? '#aaa' : '#888',
+                marginBottom: 28,
+              }}
+            >
+              Siapa namamu?
+            </p>
 
-        <form
-          onSubmit={handleSubmit}
-          style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
-        >
-          <input
-            style={{
-              ...theme.input,
-              textAlign: 'center',
-              fontSize: 16,
-            }}
-            type="text"
-            placeholder="Nama / username kamu..."
-            value={name}
-            onChange={(e) => {
-              setName(e.target.value);
-              setShowPassword(false);
-              setPassword('');
-              setError('');
-            }}
-            autoFocus
-            required
-          />
+            <form
+              onSubmit={handleNameSubmit}
+              style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
+            >
+              <input
+                style={{
+                  ...theme.input,
+                  textAlign: 'center',
+                  fontSize: 16,
+                }}
+                type="text"
+                placeholder="Nama / username kamu..."
+                value={name}
+                onChange={(e) => {
+                  setName(e.target.value);
+                  setError('');
+                }}
+                autoFocus
+                required
+              />
+              <button type="submit" style={{ ...theme.btnPrimary, marginTop: 4 }}>
+                Masuk ✨
+              </button>
+            </form>
+          </>
+        )}
 
-          {showPassword && (
-            <>
-              <p style={{ fontSize: 13, color: isDark ? '#aaa' : '#888', margin: 0 }}>
-                Halo admin! Masukkan password:
-              </p>
+        {step === 'auth' && (
+          <>
+            <div style={{ fontSize: 48, marginBottom: 8 }}>🔐</div>
+            <h2
+              style={{
+                fontSize: 20,
+                fontWeight: 700,
+                color: isDark ? '#eee' : '#222',
+                marginBottom: 4,
+              }}
+            >
+              Halo, Admin!
+            </h2>
+            <p
+              style={{
+                fontSize: 13,
+                color: isDark ? '#aaa' : '#888',
+                marginBottom: 24,
+              }}
+            >
+              Masuk dengan email & password akun kamu
+            </p>
+
+            <form
+              onSubmit={handleAdminLogin}
+              style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
+            >
+              <input
+                style={{ ...theme.input, textAlign: 'center', fontSize: 15 }}
+                type="email"
+                placeholder="Email admin..."
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setError('');
+                }}
+                autoFocus
+                required
+              />
               <input
                 style={{
                   ...theme.input,
@@ -121,27 +184,46 @@ export default function WelcomeModal({ theme, isDark, onEnter }) {
                   fontSize: 16,
                 }}
                 type="password"
-                placeholder="••••••"
+                placeholder="••••••••"
                 value={password}
                 onChange={(e) => {
                   setPassword(e.target.value);
                   setError('');
                 }}
-                autoFocus
+                required
               />
-            </>
-          )}
 
-          {error && (
-            <div style={{ fontSize: 13, color: '#e05', marginTop: -4 }}>
-              {error}
-            </div>
-          )}
+              {error && (
+                <div style={{ fontSize: 13, color: '#e05', marginTop: -4 }}>
+                  {error}
+                </div>
+              )}
 
-          <button type="submit" style={{ ...theme.btnPrimary, marginTop: 4 }}>
-            {showPassword ? 'Masuk sebagai Admin 🔐' : 'Masuk ✨'}
-          </button>
-        </form>
+              <button
+                type="submit"
+                style={{ ...theme.btnPrimary, marginTop: 4, opacity: loading ? 0.7 : 1 }}
+                disabled={loading}
+              >
+                {loading ? 'Memverifikasi...' : 'Masuk sebagai Admin 🛡️'}
+              </button>
+
+              <button
+                type="button"
+                onClick={handleBackToName}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: isDark ? '#888' : '#aaa',
+                  fontSize: 13,
+                  cursor: 'pointer',
+                  marginTop: -4,
+                }}
+              >
+                ← Bukan admin? Kembali
+              </button>
+            </form>
+          </>
+        )}
       </div>
     </div>
   );
