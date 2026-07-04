@@ -1,0 +1,4 @@
+{
+  "devCommand": "vite --port 3000",
+  "framework": "vite"
+}
